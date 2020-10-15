@@ -14,15 +14,29 @@
 
 # Convenience script to build TFX docker image.
 
-set -u -x
+set -ex
 
 DOCKER_IMAGE_REPO=${DOCKER_IMAGE_REPO:-"tensorflow/tfx"}
 DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-"latest"}
 DOCKER_FILE=${DOCKER_FILE:-"Dockerfile"}
-TFX_DEPENDENCY_SELECTOR=${TFX_DEPENDENCY_SELECTOR:-""}
+
+# Base image to extend: This should be a deep learning image with a compatible
+# TensorFlow version. See
+# https://cloud.google.com/ai-platform/deep-learning-containers/docs/choosing-container
+# for possible images to use here.
+# Default value is set to latest `tf2-gpu` compatible image.
+# TODO(156745950): Ideally, we should figure out which narrow version of
+# TensorFlow current TFX code depends on here and use that instead.
+if [[ -n "$BASE_IMAGE" ]]; then
+  echo "Using override base image $BASE_IMAGE"
+else
+  BASE_IMAGE=$(gcloud container images list --repository="gcr.io/deeplearning-platform-release" | grep "tf2-gpu" | sort -n | tail -1)
+  echo "Using latest tf2-gpu image $BASE_IMAGE as base"
+fi
+
 
 # Run docker build command.
 docker build -t ${DOCKER_IMAGE_REPO}:${DOCKER_IMAGE_TAG} \
   -f tfx/tools/docker/${DOCKER_FILE} \
-  --build-arg TFX_DEPENDENCY_SELECTOR=${TFX_DEPENDENCY_SELECTOR} \
+  --build-arg BASE_IMAGE=${BASE_IMAGE} \
   . "$@"
