@@ -8,6 +8,9 @@
   definitions can be found here: [Post-traning
   quantization](https://www.tensorflow.org/lite/performance/post_training_quantization).
 
+*  Added automatic population of vocab_paths when computing statistics within
+   the Transform component.
+
 ## Breaking changes
 *   Do not store pipeline information on the local filesystem when using
     Kubeflow Pipelines orchestration with CLI. CLI will always use the latest
