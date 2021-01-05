@@ -514,7 +514,7 @@ class LauncherTest(test_case_utils.TfxTest):
         custom_executor_operators=executor_operators)
 
     with self.assertRaisesRegex(
-        RuntimeError,
+        Exception,
         'Execution .* failed with error code .* and error message .*'):
       _ = test_launcher.launch()
 
@@ -527,6 +527,12 @@ class LauncherTest(test_case_utils.TfxTest):
           id: 3
           type_id: 8
           last_known_state: FAILED
+          custom_properties {
+            key: 'execution_result'
+            value {
+              string_value: '{\\n  "resultMessage": "execution cancled.",\\n  "code": 1\\n}'
+            }
+          }
           """,
           executions[-1],
           ignored_fields=[
