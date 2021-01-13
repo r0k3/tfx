@@ -350,7 +350,7 @@ def create_model_for_aip_prediction_if_not_exist(
   model_name = ai_platform_serving_args['model_name']
   project_id = ai_platform_serving_args['project_id']
   regions = ai_platform_serving_args.get('regions', [])
-  body = {'name': model_name, 'regions': regions, 'labels': job_labels}
+  body = {'name': model_name, 'regions': regions, 'labels': dict(job_labels)}
   parent = 'projects/{}'.format(project_id)
   result = True
   try:
@@ -380,9 +380,18 @@ def deploy_model_for_aip_prediction(api: discovery.Resource,
     model_version: Version of the model being deployed. Must be different from
       what is currently being served.
     ai_platform_serving_args: Dictionary containing arguments for pushing to AI
-      Platform. For the full set of parameters supported, refer to
-      https://cloud.google.com/ml-engine/reference/rest/v1/projects.models.versions#Version
-    job_labels: The dict of labels that will be attached to this job.
+      Platform. The full set of parameters supported can be found at
+      https://cloud.google.com/ml-engine/reference/rest/v1/projects.models.versions#Version.
+      Most keys are forwarded as-is, but following keys are handled specially:
+        - name: this must be empty (and will be filled by pusher).
+        - deployment_uri: this must be empty (and will be filled by pusher).
+        - python_version: when left empty, this will be filled by python version
+            of the environment being used.
+        - runtime_version: when left empty, this will be filled by TensorFlow
+            version from the environment.
+        - labels: a list of job labels will be merged with user's input.
+    job_labels: The dict of labels that will be attached to this job. They are
+      merged with optional labels from `ai_platform_serving_args`.
     skip_model_creation: If true, the method assuem model already exist in
       AI platform, therefore skipping model creation.
     set_default_version: Whether set the newly deployed model version as the
@@ -405,19 +414,25 @@ def deploy_model_for_aip_prediction(api: discovery.Resource,
   if not skip_model_creation:
     create_model_for_aip_prediction_if_not_exist(api, job_labels,
                                                  ai_platform_serving_args)
-  body = {
-      'name': model_version,
-      'deployment_uri': serving_path,
-      'runtime_version': runtime_version,
-      'python_version': python_version,
-      'labels': job_labels,
-  }
+  version_body = dict(ai_platform_serving_args)
+  for model_only_key in ['model_name', 'project_id', 'regions']:
+    version_body.pop(model_only_key, None)
+  version_body['name'] = model_version
+  version_body['deployment_uri'] = serving_path
+  version_body['runtime_version'] = version_body.get('runtime_version',
+                                                     runtime_version)
+  version_body['python_version'] = version_body.get('python_version',
+                                                    python_version)
+  version_body['labels'] = {**version_body.get('labels', {}), **job_labels}
+  logging.info(
+      'Creating new version of model_name %s in project %s, request body: %s',
+      model_name, project_id, version_body)
 
   # Push to AIP, and record the operation name so we can poll for its state.
   model_name = 'projects/{}/models/{}'.format(project_id, model_name)
   try:
     operation = api.projects().models().versions().create(
-        body=body, parent=model_name).execute()
+        body=version_body, parent=model_name).execute()
     _wait_for_operation(api, operation, 'projects.models.versions.create')
   except errors.HttpError as e:
     # If the error is to create an already existing model version, it's ok to

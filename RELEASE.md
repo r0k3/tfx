@@ -37,6 +37,9 @@
     Such alternative image should behave the same as official
     `tensorflow/serving` image such as the same model volume path, serving port,
     etc.
+*   Executor in `tfx.extensions.google_cloud_ai_platform.pusher.executor` will
+    forward all keys in `ai_platform_serving_args` when creating new version
+    of model.
 
 ## Documentation updates
 

@@ -60,7 +60,7 @@ class Executor(tfx_pusher_executor.Executor):
         tfx.components.Pusher.executor.  custom_config.ai_platform_serving_args
         is consumed by this class.  For the full set of parameters supported by
         Google Cloud AI Platform, refer to
-        https://cloud.google.com/ml-engine/docs/tensorflow/deploying-models#creating_a_model_version.
+        https://cloud.google.com/ml-engine/reference/rest/v1/projects.models.versions#Version.
 
     Raises:
       ValueError:

@@ -321,6 +321,34 @@ class RunnerTest(tf.test.TestCase):
     self._assertDeployModelMockCalls(
         expected_versions_create_body=expected_versions_create_body)
 
+  def testDeployModelForAIPPredictionWithCustomMachineType(self):
+    self._setUpPredictionMocks()
+
+    self._ai_platform_serving_args['machine_type'] = 'custom_machine_type'
+    runner.deploy_model_for_aip_prediction(self._mock_api_client,
+                                           self._serving_path,
+                                           self._model_version,
+                                           self._ai_platform_serving_args,
+                                           self._job_labels)
+
+    expected_versions_create_body = {
+        'name':
+            self._model_version,
+        'deployment_uri':
+            self._serving_path,
+        'machine_type':
+            'custom_machine_type',
+        'runtime_version':
+            runner._get_tf_runtime_version(tf.__version__),
+        'python_version':
+            runner._get_caip_python_version(
+                runner._get_tf_runtime_version(tf.__version__)),
+        'labels':
+            self._job_labels,
+    }
+    self._assertDeployModelMockCalls(
+        expected_versions_create_body=expected_versions_create_body)
+
   def testGetTensorflowRuntime(self):
     self.assertEqual('1.14', runner._get_tf_runtime_version('1.14'))
     self.assertEqual('1.15', runner._get_tf_runtime_version('1.15.0'))
