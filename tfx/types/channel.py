@@ -1,4 +1,3 @@
-# Lint as: python2, python3
 # Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,17 +13,15 @@
 # limitations under the License.
 """TFX Channel definition."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import inspect
 import json
+import textwrap
 from typing import Any, Dict, Iterable, Optional, Text, Type
 
 from tfx.types import artifact_utils
 from tfx.types.artifact import Artifact
 from tfx.utils import json_utils
+from tfx.utils import proto_utils
 from google.protobuf import json_format
 from ml_metadata.proto import metadata_store_pb2
 
@@ -44,6 +41,10 @@ class Channel(json_utils.Jsonable):
   def __init__(
       self,
       type: Type[Artifact],  # pylint: disable=redefined-builtin
+      additional_properties: Optional[Dict[Text,
+                                           metadata_store_pb2.Value]] = None,
+      additional_custom_properties: Optional[Dict[
+          Text, metadata_store_pb2.Value]] = None,
       # TODO(b/161490287): deprecate static artifact.
       artifacts: Optional[Iterable[Artifact]] = None,
       matching_channel_name: Optional[Text] = None,
@@ -53,6 +54,11 @@ class Channel(json_utils.Jsonable):
 
     Args:
       type: Subclass of Artifact that represents the type of this Channel.
+      additional_properties: (Optional) A mapping of properties which will be
+        added to artifacts when this channel is used as an output of components.
+      additional_custom_properties: (Optional) A mapping of custom_properties
+        which will be added to artifacts when this channel is used as an output
+        of components.
       artifacts: (Optional) A collection of artifacts as the values that can be
         read from the Channel. This is used to construct a static Channel.
       matching_channel_name: This targets to the key of an input Channel dict
@@ -75,6 +81,10 @@ class Channel(json_utils.Jsonable):
       raise ValueError(
           'Only one of `artifacts` and `matching_channel_name` should be set.')
     self._validate_type()
+
+    self.additional_properties = additional_properties or {}
+    self.additional_custom_properties = additional_custom_properties or {}
+
     # The following fields will be populated during compilation time.
     self.producer_component_id = producer_component_id
     self.output_key = output_key
@@ -85,8 +95,14 @@ class Channel(json_utils.Jsonable):
 
   def __repr__(self):
     artifacts_str = '\n    '.join(repr(a) for a in self._artifacts)
-    return 'Channel(\n    type_name: {}\n    artifacts: [{}]\n)'.format(
-        self.type_name, artifacts_str)
+    return textwrap.dedent("""\
+        Channel(
+            type_name: {}
+            artifacts: [{}]
+            additional_properties: {}
+            additional_custom_properties: {}
+        )""").format(self.type_name, artifacts_str, self.additional_properties,
+                     self.additional_custom_properties)
 
   def _validate_type(self) -> None:
     for artifact in self._artifacts:
@@ -114,6 +130,14 @@ class Channel(json_utils.Jsonable):
                     preserving_proto_field_name=True)),
         'artifacts':
             list(a.to_json_dict() for a in self._artifacts),
+        'additional_properties': {
+            k: proto_utils.proto_to_json(v)
+            for k, v in self.additional_properties.items()
+        },
+        'additional_custom_properties': {
+            k: proto_utils.proto_to_json(v)
+            for k, v in self.additional_custom_properties.items()
+        },
         'producer_component_id':
             (self.producer_component_id if self.producer_component_id else None
             ),
@@ -126,10 +150,20 @@ class Channel(json_utils.Jsonable):
     json_format.Parse(json.dumps(dict_data['type']), artifact_type)
     type_cls = artifact_utils.get_artifact_type_class(artifact_type)
     artifacts = list(Artifact.from_json_dict(a) for a in dict_data['artifacts'])
+    additional_properties = {
+        k: proto_utils.json_to_proto(v, metadata_store_pb2.Value())
+        for k, v in dict_data['additional_properties'].items()
+    }
+    additional_custom_properties = {
+        k: proto_utils.json_to_proto(v, metadata_store_pb2.Value())
+        for k, v in dict_data['additional_custom_properties'].items()
+    }
     producer_component_id = dict_data.get('producer_component_id', None)
     output_key = dict_data.get('output_key', None)
     return Channel(
         type=type_cls,
         artifacts=artifacts,
+        additional_properties=additional_properties,
+        additional_custom_properties=additional_custom_properties,
         producer_component_id=producer_component_id,
         output_key=output_key)

@@ -178,6 +178,12 @@ class Compiler(object):
         output_spec = node.outputs.outputs[key]
         artifact_type = value.type._get_artifact_type()  # pylint: disable=protected-access
         output_spec.artifact_spec.type.CopyFrom(artifact_type)
+        for prop_key, prop_value in value.additional_properties.items():
+          output_spec.artifact_spec.additional_properties[
+              prop_key].field_value.CopyFrom(prop_value)
+        for prop_key, prop_value in value.additional_custom_properties.items():
+          output_spec.artifact_spec.additional_custom_properties[
+              prop_key].field_value.CopyFrom(prop_value)
 
     # TODO(b/170694459): Refactor special nodes as plugins.
     # Step 4.1: Special treament for Importer node

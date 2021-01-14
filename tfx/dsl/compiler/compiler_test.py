@@ -18,6 +18,7 @@ from absl.testing import parameterized
 
 import tensorflow as tf
 from tfx.dsl.compiler import compiler
+from tfx.dsl.compiler.testdata import custom_pipeline_async
 from tfx.dsl.compiler.testdata import iris_pipeline_async
 from tfx.dsl.compiler.testdata import iris_pipeline_sync
 from tfx.orchestration import pipeline
@@ -47,6 +48,8 @@ class CompilerTest(tf.test.TestCase, parameterized.TestCase):
       return text_format.ParseLines(text_pb_file, pipeline_pb2.Pipeline())
 
   @parameterized.named_parameters(
+      ("async_custom_pipeline", custom_pipeline_async,
+       "custom_pipeline_async_ir.pbtxt"),
       ("sync_pipeline", iris_pipeline_sync, "iris_pipeline_sync_ir.pbtxt"),
       ("async_pipeline", iris_pipeline_async, "iris_pipeline_async_ir.pbtxt"))
   def testCompile(self, pipeline_module, expected_result_path):
