@@ -34,7 +34,6 @@ from distutils.command import build
 # pylint: enable=g-bad-import-order
 
 from tfx import dependencies
-from tfx import version
 from tfx.tools import resolve_deps
 from wheel import bdist_wheel
 
@@ -198,6 +197,12 @@ with open('README.md') as fp:
 with open('README.ml-pipelines-sdk.md') as fp:
   _PIPELINES_SDK_LONG_DESCRIPTION = fp.read()
 
+# Get version from version module.
+with open('tfx/version.py') as fp:
+  globals_dict = {}
+  exec(fp.read(), globals_dict)  # pylint: disable=exec-used
+__version__ = globals_dict['__version__']
+
 package_name = package_config.PACKAGE_NAME
 tfx_extras_requires = {
     # In order to use 'docker-image' or 'all', system libraries specified
@@ -293,7 +298,7 @@ elif package_config.PACKAGE_NAME == 'tfx':
   # the "ml-pipelines-sdk" pipeline authoring SDK package and adds first-party
   # TFX components and additional functionality.
   install_requires = (
-      ['ml-pipelines-sdk==%s' % version.__version__] +
+      ['ml-pipelines-sdk==%s' % __version__] +
       dependencies.make_required_install_packages())
   extras_require = tfx_extras_requires
   description = _TFX_DESCRIPTION
@@ -311,7 +316,7 @@ logging.info('Executing build for package %r.', package_name)
 
 setup(
     name=package_name,
-    version=version.__version__,
+    version=__version__,
     author='Google LLC',
     author_email='tensorflow-extended-dev@googlegroups.com',
     license='Apache 2.0',
