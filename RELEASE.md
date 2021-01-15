@@ -17,12 +17,13 @@
     `${HOME}/tfx/kubeflow` or `${HOME}/kubeflow` but those will not be used
     any more.
 
-* enable_quantization from TFLITE_REWRITER is removed and setting
-  quantization_optimizations = [tf.lite.Optimize.DEFAULT] will perform the same
-  type of quantization, dynamic range quantization. Users of the TFLITE_REWRITER
-  who do not enable quantization should be uneffected.
+*   enable_quantization from TFLITE_REWRITER is removed and setting
+    quantization_optimizations = [tf.lite.Optimize.DEFAULT] will perform the same
+    type of quantization, dynamic range quantization. Users of the TFLITE_REWRITER
+    who do not enable quantization should be uneffected.
 
-* Deprecated input/output compatibility aliases for ExampleValidator.
+*   Deprecated input/output compatibility aliases for ExampleValidator, Evaluator.
+
 
 ### For pipeline authors
 *   The `tfx.components.common_nodes.importer_node.ImporterNode` class has been
