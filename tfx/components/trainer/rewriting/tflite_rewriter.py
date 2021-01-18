@@ -65,21 +65,20 @@ def _create_tflite_converter(
     NotImplementedError: Raises when full-integer quantization is called.
   """
 
+  # TODO(b/175699054): Remove once data API is adopted.
+  if input_data:
+    raise NotImplementedError('Full-integer quantization is not supported yet.')
+
   converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_path)
 
   converter.optimizations = quantization_optimizations
   converter.target_spec.supported_types = quantization_supported_types
 
   if input_data:
-
     def _representative_dataset():
       # TODO(b/175699054): Fill the logic once input_data is landed.
       pass
-
     converter.representative_dataset = _representative_dataset
-
-    # TODO(b/175699054): Remove once data API is adopted.
-    raise NotImplementedError('Full-integer quantization is not supported yet.')
 
   return converter
 
